@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-scripts/02_simulate_datasets.py
+scripts/02.2_simulate_datasets.py
 
 Generate synthetic datasets across scenarios and save canonical artefacts:
   - populated tree (with epidemic + sampling times)
@@ -39,6 +39,7 @@ import argparse
 
 import numpy as np
 import pandas as pd
+
 import networkx as nx
 
 from epilink import (
@@ -112,7 +113,7 @@ def main() -> None:
         raise ValueError("simulate_datasets.yaml must define a `scenarios:` mapping.")
 
     # Defaults (same philosophy as earlier)
-    baseline = scenarios["Baseline"]
+    baseline = scenarios["baseline"]
 
     summary_rows = []
 
@@ -161,8 +162,6 @@ def main() -> None:
             tree=populated_tree,
         )
 
-        # Save canonical artefacts
-        nx.write_gml(populated_tree, sc_dir / "populated_tree.gml")
         pairwise.to_parquet(sc_dir / "pairwise.parquet", index=False)
 
         # Minimal scenario summary

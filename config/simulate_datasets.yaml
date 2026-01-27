@@ -6,9 +6,11 @@ backbone:
     - "png"
     - "pdf"
 
+# All simulation scenarios are defined as perturbations of a common baseline parameterisation corresponding to the
+# estimates of Hart et al. Parameters not explicitly listed for a given scenario take their baseline values.
 scenarios:
 
-  Baseline:
+  baseline:
     description: "Baseline: High Signal"
     ######################################
     # Infectiousness (Hart et al.)

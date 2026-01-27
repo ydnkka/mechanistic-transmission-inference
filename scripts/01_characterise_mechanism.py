@@ -92,11 +92,11 @@ def heatmap(z: np.ndarray, x: np.ndarray, y: np.ndarray, xlabel: str, ylabel: st
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--paths", default="../config/paths.yaml")
-    parser.add_argument("--parameters", default="../config/default_parameters.yaml")
+    parser.add_argument("--defaults", default="../config/default_parameters.yaml")
     args = parser.parse_args()
 
     paths_cfg = load_yaml(Path(args.paths))
-    param_cfg = load_yaml(Path(args.parameters))
+    param_cfg = load_yaml(Path(args.defaults))
 
     figs_dir = Path(deep_get(paths_cfg, ["outputs", "figures", "supplementary"], "figures/supplementary"))
     tabs_dir = Path(deep_get(paths_cfg, ["outputs", "tables", "supplementary"], "tables/supplementary"))

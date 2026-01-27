@@ -13,6 +13,6 @@ What to include:
 	•	emphasise what you can infer (structure, density, temporal concentration), not exact who-infected-whom.
 
 Code implication:
-	•	05_boston_pipeline.py (compute pairwise distances + run epilink inference + build network + Leiden)
+	•	06_boston_pipeline.py (compute pairwise distances + run epilink inference + build network + Leiden)
 	•	boston_figures.py (cluster summaries and persistence plots)
 """

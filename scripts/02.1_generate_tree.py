@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-generate_tree.py
+02.1_generate_tree.py
 
 Reconstruct a (rooted, acyclic) transmission tree from SCoVMod-style outputs.
 
