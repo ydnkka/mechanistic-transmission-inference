@@ -29,7 +29,6 @@ import numpy as np
 import pandas as pd
 
 import igraph as ig
-from sklearn.metrics import adjusted_rand_score
 import bcubed
 
 from utils import *
