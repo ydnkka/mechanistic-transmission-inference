@@ -10,3 +10,4 @@ community_detection:
     - LogitProbPoissonDist_1.0
 network:
   sparsify: {enabled: true, min_edge_weight: 0.01}
+  min_edge_weights: [0.0, 0.001, 0.005, 0.01, 0.02, 0.05,  0.1]

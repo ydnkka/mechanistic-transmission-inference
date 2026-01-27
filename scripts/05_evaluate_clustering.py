@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 from collections import defaultdict
+import pickle
 
 import numpy as np
 import pandas as pd
@@ -106,6 +107,9 @@ def main() -> None:
         print(f">>> Evaluating: {scen}")
         sc_dir = processed_dir / f"scenario={scen}"
         part_path = sc_dir / "leiden_partitions.parquet"
+        part_dict_path = sc_dir / "leiden_partitions_dict.pkl"
+        with part_dict_path.open("rb") as f:
+            part_dict = pickle.load(f)
 
         if not part_path.exists() or not tree_path.exists():
             continue
@@ -131,21 +135,15 @@ def main() -> None:
         gammas = np.sort(parts["gamma"].unique())
         for weight_col, sub in parts.groupby("weight_col", observed=True):
             for g1, g2 in zip(gammas[:-1], gammas[1:]):
-                p1 = sub.loc[sub["gamma"] == g1].sort_values("case_id")
-                p2 = sub.loc[sub["gamma"] == g2].sort_values("case_id")
-                # align case sets
-                common = np.intersect1d(p1["case_id"].values, p2["case_id"].values)
-                if common.size < 10:
-                    continue
-                a = p1[p1["case_id"].isin(common)].sort_values("case_id")["cluster_id"].values
-                b = p2[p2["case_id"].isin(common)].sort_values("case_id")["cluster_id"].values
+                p1 = part_dict[weight_col][g1]
+                p2 = part_dict[weight_col][g2]
+                ari = p1.compare_to(p2, method='ari')
                 stability_rows.append({
                     "Scenario": scen,
                     "Weight_Column": weight_col,
                     "gamma1": float(g1),
                     "gamma2": float(g2),
-                    "ARI": float(adjusted_rand_score(a, b)),
-                    "N_common": int(common.size),
+                    "ARI": ari
                 })
 
     pd.DataFrame(metrics_rows).to_csv(tabs_dir / "clustering_metrics.csv", index=False)

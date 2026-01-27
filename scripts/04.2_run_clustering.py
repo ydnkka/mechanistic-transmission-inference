@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-scripts/04_run_clustering.py
+scripts/04.2_run_clustering.py
 
 Build weighted networks from saved synthetic pairwise datasets and run Leiden
 community detection across a grid of resolution parameters.
@@ -27,6 +27,7 @@ config/clustering.yaml:
 from __future__ import annotations
 
 import argparse
+import pickle
 
 import numpy as np
 import pandas as pd
@@ -99,9 +100,10 @@ def main() -> None:
         df = df[df["Sampled"]].copy()
 
         rows = []
+        partitions = {}
         for weight_col in weight_columns:
             graph = build_igraph_from_pairwise(df[["NodeA", "NodeB", weight_col]].dropna(), weight_col, min_w=min_w)
-
+            parts = {}
             for gamma in gammas:
                 best = None
                 best_q = -np.inf
@@ -127,12 +129,19 @@ def main() -> None:
                         best = part
 
                 memb = best.membership
+                parts[gamma] = best
                 rows.append(pd.DataFrame({
                     "case_id": graph.vs["case_id"],
                     "gamma": float(gamma),
                     "cluster_id": np.array(memb, dtype=int),
                     "weight_col": weight_col,
                 }))
+
+            partitions[weight_col] = parts
+
+        part_dir = sc_dir / "leiden_partitions_dict.pkl"
+        with part_dir.open("wb") as f:
+            pickle.dump(partitions, f, protocol=pickle.HIGHEST_PROTOCOL)
 
         out = pd.concat(rows, ignore_index=True)
         out.to_parquet(sc_dir / "leiden_partitions.parquet", index=False)

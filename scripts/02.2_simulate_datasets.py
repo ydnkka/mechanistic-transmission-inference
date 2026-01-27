@@ -10,7 +10,7 @@ Generate synthetic datasets across scenarios and save canonical artefacts:
 
 This script should run ONCE to produce datasets reused by:
   - scripts/03_evaluate_edges.py
-  - scripts/04_run_clustering.py
+  - scripts/04.2_run_clustering.py
 
 Config
 ------
