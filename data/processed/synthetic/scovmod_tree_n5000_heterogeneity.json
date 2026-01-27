@@ -1,0 +1,25 @@
+{
+  "dispersion_k": 0.23295007758779804,
+  "mean_Rt": 0.9994133666199423,
+  "Rt_CI95": [
+    0.9922797959978048,
+    1.0055915297206908
+  ],
+  "k_CI95": [
+    0.23169662743533537,
+    0.23466684634112334
+  ],
+  "superspreading_threshold": 4.0,
+  "prop_80_percent_transmitters": 0.15611716890248217,
+  "pct_zero_transmitters": 67.83461794935795,
+  "pct_superspreaders": 9.339388227229886,
+  "meta": {
+    "n": 536866,
+    "total_transmissions": 536541,
+    "bootstrap_kept": 200,
+    "fit_method": "mle",
+    "fit_notes": "",
+    "superspreading_reference": "poisson",
+    "quantile": 0.99
+  }
+}

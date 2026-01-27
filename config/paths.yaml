@@ -1,0 +1,15 @@
+data:
+  raw:
+    scovmod_output: ../data/raw/scovmod_output
+    boston: ../data/raw/boston
+  processed:
+    synthetic: ../data/processed/synthetic
+    boston: ../data/processed/boston
+
+outputs:
+    tables:
+      main: ../tables/main
+      supplementary: ../tables/supplementary
+    figures:
+      main: ../figures/main
+      supplementary: ../figures/supplementary

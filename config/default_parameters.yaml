@@ -1,0 +1,37 @@
+toit:
+  rng_seed: 12345
+  # Hart et al. defaults governing disease progression timelines
+  infectiousness_params:
+    k_inc: 5.807
+    scale_inc: 0.948
+    k_E: 3.38
+    mu: 0.37
+    k_I: 1.0
+    alpha: 2.29
+
+  # Viral evolution parameters (used by TOIT)
+  evolution:
+    subs_rate: 0.001
+    relax_rate: True
+    subs_rate_sigma: 0.33
+    gen_length: 29903
+
+inference:
+  # Used in probability estimation
+  num_simulations: 10000
+  inter_generations:
+    - 0
+    - 1
+  num_intermediates: 10
+
+characterisation:
+  genetic_distance_grid:
+    max_snp: 10
+    step: 1
+  temporal_distance_grid:
+    max_days: 21
+    step: 1
+
+  save_formats:
+    - "png"
+    - "pdf"

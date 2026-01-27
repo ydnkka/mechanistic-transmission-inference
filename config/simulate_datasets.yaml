@@ -1,0 +1,96 @@
+backbone:
+  tree_gml: "../data/processed/synthetic/scovmod_tree_n5000.gml"
+  rng_seed: 12345
+  gen_length: 29903
+  save_formats:
+    - "png"
+    - "pdf"
+
+scenarios:
+
+  Baseline:
+    description: "Baseline: High Signal"
+    ######################################
+    # Infectiousness (Hart et al.)
+    k_inc: 5.807
+    scale_inc: 0.948
+    k_E: 3.38
+    mu: 0.37
+    k_I: 1.0
+    alpha: 2.29
+    ######################################
+    # Viral evolution
+    subs_rate: 0.001
+    relax_rate: False
+    subs_rate_sigma: 0.0
+    ######################################
+    # Sampling
+    prop_sampled: 1.0
+    sampling_shape: 3.0
+    sampling_scale: 0.0
+
+
+  # -------------------------------------------------
+  # Surveillance degradation
+  # -------------------------------------------------
+
+  surveillance_moderate:
+    description: "Moderate surveillance degradation"
+    prop_sampled: 0.5
+    sampling_scale: 1.0 # mean delay = 3 days
+
+  surveillance_severe:
+    description: "Severe surveillance degradation"
+    prop_sampled: 0.15
+    sampling_scale: 2.5 # mean delay = 7.5 days
+
+
+  # -------------------------------------------------
+  # Evolutionary signal degradation
+  # -------------------------------------------------
+
+  low_clock_signal:
+    description: "Low evolutionary signal (strict clock)"
+    subs_rate: 0.0005
+
+  high_clock_signal:
+    description: "High evolutionary signal (strict clock)"
+    subs_rate: 0.0015
+
+  relaxed_clock:
+    description: "Relaxed molecular clock"
+    relax_rate: true
+    subs_rate_sigma: 0.33
+
+
+  # -------------------------------------------------
+  # Incubation period sensitivity (Hart focus)
+  # -------------------------------------------------
+
+  low_k_inc:
+    description: "Lower incubation shape (more skew)"
+    k_inc: 3.0
+
+  high_k_inc:
+    description: "Higher incubation shape (less skew)"
+    k_inc: 8.0
+
+  low_scale_inc:
+    description: "Lower incubation scale (low values)"
+    scale_inc: 0.448 # -0.5 from Hart et al. default
+
+  high_scale_inc:
+    description: "Higher incubation shape (high values)"
+    scale_inc: 1.448 # +0.5 from Hart et al. default
+  # -------------------------------------------------
+  # Adversarial combined stress test
+  # -------------------------------------------------
+
+  adversarial:
+    description: "Sparse sampling, long delay, low signal, relaxed clock, altered incubation"
+    k_inc: 4.0
+    subs_rate: 0.0005
+    relax_rate: true
+    subs_rate_sigma: 0.33
+    prop_sampled: 0.3
+    sampling_scale: 2.0        # mean delay = 6 days

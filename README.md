@@ -23,6 +23,8 @@ The repository supports:
 
 This repository is intended for transparency and reproducibility and is not a standalone implementation of the framework.
 
+All analyses are fully configuration-driven. No parameters affecting results are hard-coded.
+
 The full implementation of the framework is available in the **[epilink](https://github.com/ydnkka/epilink)** repository.
 
 ## Repository structure
