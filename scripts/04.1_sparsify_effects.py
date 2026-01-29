@@ -304,7 +304,7 @@ def main() -> None:
 
     # Save tables
     retention_df.to_csv(tabs_dir / "sparsify_edge_retention.csv", index=False)
-    strength_df.to_csv(tabs_dir / "sparsify_node_strength_distortion.csv", index=False)
+    strength_df.to_parquet(tabs_dir / "sparsify_node_strength_distortion.parquet", index=False)
     components_df.to_csv(tabs_dir / "sparsify_components_summary.csv", index=False)
 
     # Plots: retention curves
