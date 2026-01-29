@@ -44,7 +44,6 @@ pandas, numpy, matplotlib, networkx, pyyaml
 from __future__ import annotations
 
 import argparse
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -109,7 +108,7 @@ def total_edge_weight(df: pd.DataFrame, weight_col: str) -> float:
 # Node strength distortion
 # -----------------------------
 
-def node_strengths_from_edges(df: pd.DataFrame, weight_col: str, nodes: Optional[pd.Index] = None) -> pd.Series:
+def node_strengths_from_edges(df: pd.DataFrame, weight_col: str, nodes: pd.Index = None) -> pd.Series:
     """Weighted degree ("strength") per node from edge list."""
     if len(df) == 0:
         s = pd.Series(dtype=float)
