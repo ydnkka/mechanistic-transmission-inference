@@ -122,8 +122,6 @@ def node_strengths_from_edges(df: pd.DataFrame, weight_col: str, nodes: Optional
         s = s.reindex(nodes, fill_value=0.0)
     return s
 
-
-
 # -----------------------------
 # Plotting helpers
 # -----------------------------

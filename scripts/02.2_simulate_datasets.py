@@ -67,7 +67,8 @@ def plot_hist(x: np.ndarray, title: str, xlabel: str) -> plt.Figure:
     ax.grid(True, alpha=0.3)
     return fig
 
-def plot_bar(x: np.ndarray, title: str) -> plt.Figure:
+
+def plot_related_bar(x: np.ndarray, title: str) -> plt.Figure:
     fig, ax = plt.subplots(figsize=(5, 3))
     ax.bar([0, 1], [int((x == 0).sum()), int((x == 1).sum())])
     ax.set_xticks([0, 1])
@@ -197,15 +198,15 @@ def main() -> None:
         fig = plot_hist(sampled["TemporalDist"].to_numpy(), f"{name}: Temporal distance", "Days")
         save_figure(fig, figs_dir / f"{name}_temporal_dist", formats); plt.close(fig)
 
-        fig = plot_hist(sampled["PoissonDist"].to_numpy(), f"{name}: Poisson Genetic distance", "Distance")
+        fig = plot_hist(sampled["PoissonDist"].to_numpy(), f"{name}: Stochastic genetic distance", "Distance")
         save_figure(fig, figs_dir / f"{name}_poisson_genetic_dist", formats)
         plt.close(fig)
 
-        fig = plot_hist(sampled["LinearDist"].to_numpy(), f"{name}: Linear Genetic distance", "Distance")
+        fig = plot_hist(sampled["LinearDist"].to_numpy(), f"{name}: Deterministic genetic distance", "Distance")
         save_figure(fig, figs_dir / f"{name}_linear_genetic_dist", formats)
         plt.close(fig)
 
-        fig = plot_bar(sampled["Related"].to_numpy(), name)
+        fig = plot_related_bar(sampled["Related"].to_numpy(), name)
         save_figure(fig, figs_dir / f"{name}_class_balance", formats)
         plt.close(fig)
 

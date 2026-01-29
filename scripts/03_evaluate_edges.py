@@ -69,8 +69,8 @@ def main() -> None:
     defaults_cfg = load_yaml(Path(args.defaults))
 
     processed_dir = Path(deep_get(paths_cfg, ["data", "processed", "synthetic"], "../data/processed/synthetic"))
-    figs_dir = Path(deep_get(paths_cfg, ["outputs", "figures", "supplementary"], "figures/supplementary"))
-    tabs_dir = Path(deep_get(paths_cfg, ["outputs", "tables", "supplementary"], "tables/supplementary"))
+    figs_dir = Path(deep_get(paths_cfg, ["outputs", "figures", "supplementary"], "../figures/supplementary"))
+    tabs_dir = Path(deep_get(paths_cfg, ["outputs", "tables", "supplementary"], "../tables/supplementary"))
     figs_dir = figs_dir / "edge_eval"
     ensure_dirs(processed_dir, figs_dir, tabs_dir)
 
