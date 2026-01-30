@@ -54,16 +54,15 @@ from __future__ import annotations
 import argparse
 import time
 import tracemalloc
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+import gc
+from typing import Optional
 
 import numpy as np
 import pandas as pd
 import networkx as nx
 import igraph as ig
-import matplotlib.pyplot as plt
 
-from utils import load_yaml, deep_get, ensure_dirs, save_figure
+from utils import *
 
 
 # -----------------------------
@@ -180,12 +179,6 @@ def build_igraph_from_pairwise(
       Optional fixed vertex set to retain isolates (recommended for fair scaling).
       If provided, should be the *string* case_id values.
     """
-    if len(df) == 0:
-        g = ig.Graph()
-        if vertices is not None and len(vertices):
-            g.add_vertices(list(vertices))
-            g.vs["case_id"] = list(vertices)
-        return g
 
     # Ensure consistent id types for igraph
     a = _as_str_id_series(df["NodeA"])
@@ -221,8 +214,6 @@ def timed_igraph_and_leiden(
     weight_col: str,
     vertices_str: pd.Index,
     gamma: float,
-    seed: int,
-    objective: str,
 ) -> Dict[str, Any]:
     # --- graph build ---
     g, t_build = timed(build_igraph_from_pairwise, df_w, weight_col, vertices_str)
@@ -233,20 +224,19 @@ def timed_igraph_and_leiden(
     def _run_leiden():
         return g.community_leiden(
             weights=weight_col,
-            resolution_parameter=float(gamma),
-            objective_function=str(objective),
-            n_iterations=-1,
-            seed=int(seed),
+            resolution=float(gamma),
+            n_iterations=-1,  # until convergence
         )
 
     part, t_leiden = timed(_run_leiden)
+    clusters = [c for c in part if len(c) >= 2]
 
     return {
         "ig_n_vertices": int(g.vcount()),
         "ig_n_edges": int(g.ecount()),
         "t_igraph_build_s": float(t_build),
         "t_leiden_s": float(t_leiden),
-        "n_clusters": int(len(part)),
+        "n_clusters": int(len(clusters)),
     }
 
 
@@ -254,19 +244,21 @@ def timed_igraph_and_leiden(
 # Plotting
 # -----------------------------
 
-def plot_curve(df: pd.DataFrame, x: str, y: str, title: str, xlabel: str, ylabel: str, ylog: bool = False) -> plt.Figure:
+def plot_curve(
+        df: pd.DataFrame, x: str, y: str, title: str,
+        xlabel: str, ylabel: str) -> plt.Figure:
     fig, ax = plt.subplots(figsize=(6.8, 4.2))
     ax.plot(df[x].values, df[y].values, marker="o")
     ax.set_title(title)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    if ylog:
-        ax.set_yscale("log")
     ax.grid(True, alpha=0.3)
     return fig
 
 
-def boxplot_by_threshold(df: pd.DataFrame, x: str, y: str, title: str, xlabel: str, ylabel: str) -> plt.Figure:
+def boxplot_by_threshold(
+        df: pd.DataFrame, x: str, y: str,
+        title: str, xlabel: str, ylabel: str) -> plt.Figure:
     fig, ax = plt.subplots(figsize=(8.4, 4.8))
     cats = df[x].astype(str)
     order = sorted(cats.unique(), key=lambda z: float(z))
@@ -291,12 +283,7 @@ def main() -> None:
     parser.add_argument("--paths", default="../config/paths.yaml")
     parser.add_argument("--clustering", default="../config/clustering.yaml")
     parser.add_argument("--scenario", default="baseline", help="Scenario subdir name, e.g. baseline")
-
-    # Leiden timing options
-    parser.add_argument("--profile-leiden", action="store_true", help="Also time igraph build + Leiden per threshold")
     parser.add_argument("--gamma", type=float, default=0.5, help="Leiden resolution_parameter for timing diagnostics")
-    parser.add_argument("--seed", type=int, default=42, help="Leiden RNG seed")
-    parser.add_argument("--objective", type=str, default="CPM", choices=["CPM", "modularity"], help="Leiden objective")
 
     # Plot options
     parser.add_argument("--log-runtime", action="store_true", help="Use log scale for runtime plots")
@@ -308,7 +295,8 @@ def main() -> None:
 
     processed_dir = Path(deep_get(paths_cfg, ["data", "processed", "synthetic"], "../data/processed/synthetic"))
     tabs_dir = Path(deep_get(paths_cfg, ["outputs", "tables", "supplementary"], "../tables/supplementary"))
-    figs_dir = Path(deep_get(paths_cfg, ["outputs", "figures", "supplementary"], "../figures/supplementary")) / "sparsify"
+    figs_dir = Path(deep_get(paths_cfg, ["outputs", "figures", "supplementary"], "../figures/supplementary"))
+    figs_dir = figs_dir / "sparsify"
     ensure_dirs(tabs_dir, processed_dir, figs_dir)
 
     min_ws = list(deep_get(clus_cfg, ["network", "min_edge_weights"], [0.0, 0.001, 0.005, 0.01, 0.02, 0.05, 0.1]))
@@ -319,8 +307,6 @@ def main() -> None:
     df = pd.read_parquet(sc_dir / "pairwise_eval.parquet")
 
     weight_col = weight_columns[0]
-    if weight_col not in df.columns:
-        raise KeyError(f"weight_col='{weight_col}' not found in pairwise table columns: {list(df.columns)}")
 
     # --- reference threshold: smallest minw supplied ---
     ref_minw = float(min(min_ws))
@@ -343,6 +329,7 @@ def main() -> None:
     components_rows: List[Dict[str, Any]] = []
 
     for minw in min_ws:
+        tracemalloc.reset_peak()
         minw = float(minw)
 
         # 1) sparsify
@@ -360,6 +347,7 @@ def main() -> None:
         comp, t_summary = timed(graph_summary, g_nx)
 
         # 5) memory snapshot
+        gc.collect()
         _, peak_mem = tracemalloc.get_traced_memory()
         peak_mb = peak_mem / (1024 ** 2)
 
@@ -383,17 +371,13 @@ def main() -> None:
             "peak_tracemalloc_mb": float(peak_mb),
         }
 
-        # Optional: igraph + Leiden timing
-        if args.profile_leiden:
-            leiden_row = timed_igraph_and_leiden(
-                df_w=df_w,
-                weight_col=weight_col,
-                vertices_str=ref_nodes_str,
-                gamma=args.gamma,
-                seed=args.seed,
-                objective=args.objective,
-            )
-            row.update(leiden_row)
+        leiden_row = timed_igraph_and_leiden(
+            df_w=df_w,
+            weight_col=weight_col,
+            vertices_str=ref_nodes_str,
+            gamma=args.gamma
+        )
+        row.update(leiden_row)
 
         retention_rows.append(row)
 
@@ -430,7 +414,6 @@ def main() -> None:
         retention_df, x="n_edges", y="t_total_nx_s",
         title="Wall-clock time vs retained edges (diagnostics)",
         xlabel="Number of retained edges", ylabel="Total time (s)",
-        ylog=args.log_runtime,
     )
     save_figure(fig, figs_dir / "runtime_vs_edges", formats)
     plt.close(fig)
@@ -440,45 +423,39 @@ def main() -> None:
         retention_df, x="n_edges", y="t_build_nx_s",
         title="NetworkX graph build time vs retained edges",
         xlabel="Number of retained edges", ylabel="Build time (s)",
-        ylog=args.log_runtime,
     )
     save_figure(fig, figs_dir / "build_time_vs_edges", formats)
     plt.close(fig)
 
-    # Optional Leiden timing plots
-    if args.profile_leiden:
-        fig = plot_curve(
-            retention_df, x="n_edges", y="t_igraph_build_s",
-            title="igraph build time vs retained edges",
-            xlabel="Number of retained edges", ylabel="igraph build time (s)",
-            ylog=args.log_runtime,
-        )
-        save_figure(fig, figs_dir / "igraph_build_time_vs_edges", formats)
-        plt.close(fig)
+    fig = plot_curve(
+        retention_df, x="n_edges", y="t_igraph_build_s",
+        title="igraph build time vs retained edges",
+        xlabel="Number of retained edges", ylabel="igraph build time (s)",
+    )
+    save_figure(fig, figs_dir / "igraph_build_time_vs_edges", formats)
+    plt.close(fig)
 
-        fig = plot_curve(
-            retention_df, x="n_edges", y="t_leiden_s",
-            title=f"Leiden runtime vs retained edges (γ={args.gamma}, {args.objective})",
-            xlabel="Number of retained edges", ylabel="Leiden time (s)",
-            ylog=args.log_runtime,
-        )
-        save_figure(fig, figs_dir / "leiden_time_vs_edges", formats)
-        plt.close(fig)
+    fig = plot_curve(
+        retention_df, x="n_edges", y="t_leiden_s",
+        title=f"Leiden runtime vs retained edges (γ={args.gamma})",
+        xlabel="Number of retained edges", ylabel="Leiden time (s)",
+    )
+    save_figure(fig, figs_dir / "leiden_time_vs_edges", formats)
+    plt.close(fig)
 
-        fig = plot_curve(
-            retention_df, x="min_edge_weight", y="n_clusters",
-            title=f"Number of Leiden clusters vs sparsification threshold (γ={args.gamma})",
-            xlabel="min_edge_weight", ylabel="Number of clusters",
-        )
-        save_figure(fig, figs_dir / "clusters_vs_minw", formats)
-        plt.close(fig)
+    fig = plot_curve(
+        retention_df, x="min_edge_weight", y="n_clusters",
+        title=f"Number of Leiden clusters vs sparsification threshold (γ={args.gamma})",
+        xlabel="min_edge_weight", ylabel="Number of clusters (n>1)",
+    )
+    save_figure(fig, figs_dir / "clusters_vs_minw", formats)
+    plt.close(fig)
 
     # Peak memory vs edges (Python allocations)
     fig = plot_curve(
         retention_df, x="n_edges", y="peak_tracemalloc_mb",
         title="Peak Python-allocated memory vs retained edges",
         xlabel="Number of retained edges", ylabel="Peak tracemalloc (MB)",
-        ylog=False,
     )
     save_figure(fig, figs_dir / "peak_mem_vs_edges", formats)
     plt.close(fig)

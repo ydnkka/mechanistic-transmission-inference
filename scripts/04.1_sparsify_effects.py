@@ -225,12 +225,12 @@ def main() -> None:
 
     processed_dir = Path(deep_get(paths_cfg, ["data", "processed", "synthetic"], "../data/processed/synthetic"))
     tabs_dir = Path(deep_get(paths_cfg, ["outputs", "tables", "supplementary"], "../tables/supplementary"))
-    figs_dir = Path(deep_get(paths_cfg, ["outputs", "figures", "supplementary"], "../figures/supplementary")) / "sparsify"
+    figs_dir = Path(deep_get(paths_cfg, ["outputs", "figures", "supplementary"], "../figures/supplementary"))
+    figs_dir = figs_dir / "sparsify"
 
     ensure_dirs(tabs_dir, processed_dir, figs_dir)
 
     min_ws = list(deep_get(clus_cfg, ["network", "min_edge_weights"], [0.0, 0.001, 0.005, 0.01, 0.02, 0.05, 0.1]))
-    topks = list(deep_get(clus_cfg, ["network", "topks"], [5, 10, 20]))
     weight_columns = list(deep_get(clus_cfg, ["community_detection", "weight_columns"], ["MechProbLinearDist"]))
     formats = list(deep_get(clus_cfg, ["save_formats"], ["png", "pdf"]))
 
