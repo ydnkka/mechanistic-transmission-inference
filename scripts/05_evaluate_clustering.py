@@ -95,7 +95,7 @@ def main() -> None:
     ensure_dirs(processed_dir, tabs_dir)
 
     tree_path = Path(deep_get(scenarios_cfg, ["backbone", "tree_gml"],
-                              "../data/processed/synthetic/scovmod_tree_n5000.gml"))
+                              "../data/processed/synthetic/scovmod_tree.gml"))
     scenarios = deep_get(scenarios_cfg, ["scenarios"], {})
 
     metrics_rows = []
@@ -106,9 +106,6 @@ def main() -> None:
         print(f">>> Evaluating: {scen}")
         sc_dir = processed_dir / f"scenario={scen}"
         part_path = sc_dir / "leiden_partitions.parquet"
-        part_dict_path = sc_dir / "leiden_partitions_dict.pkl"
-        with part_dict_path.open("rb") as f:
-            part_dict = pickle.load(f)
 
         if not part_path.exists() or not tree_path.exists():
             continue
@@ -130,19 +127,25 @@ def main() -> None:
                 "N_cases": len(pred),
             })
 
-        # --- Stability (ARI) between consecutive gammas
+        # --- Stability between consecutive gammas
         gammas = np.sort(parts["gamma"].unique())
         for weight_col, sub in parts.groupby("weight_col", observed=True):
             for g1, g2 in zip(gammas[:-1], gammas[1:]):
-                p1 = part_dict[weight_col][g1]
-                p2 = part_dict[weight_col][g2]
-                ari = p1.compare_to(p2, method='ari')
+                p1 = sub[sub["gamma"] == g1]
+                p2 = sub[sub["gamma"] == g2]
+                p1_mem = dict(zip(p1["case_id"].tolist(), p1["cluster_id"].tolist()))
+                p1_mem = {int(k): {int(v)} for k, v in p1_mem.items()}
+                p2_mem = dict(zip(p2["case_id"].tolist(), p2["cluster_id"].tolist()))
+                p2_mem = {int(k): {int(v)} for k, v in p2_mem.items()}
+                prec, rec, f1 = bcubed_scores(pred=p1_mem, truth=p2_mem)
                 stability_rows.append({
                     "Scenario": scen,
                     "Weight_Column": weight_col,
                     "gamma1": float(g1),
                     "gamma2": float(g2),
-                    "ARI": ari
+                    "BCubed_Precision": prec,
+                    "BCubed_Recall": rec,
+                    "BCubed_F1_Score": f1,
                 })
 
     pd.DataFrame(metrics_rows).to_csv(tabs_dir / "clustering_metrics.csv", index=False)

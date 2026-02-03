@@ -408,21 +408,21 @@ def main() -> None:
     print(f"MSA tree: {tree_G.number_of_nodes():,} nodes, {tree_G.number_of_edges():,} edges.")
 
     # Save graph
-    gml_path = paths.processed_dir / f"scovmod_tree_n{tree_cfg.target_component_size}.gml"
+    gml_path = paths.processed_dir / f"scovmod_tree.gml"
     nx.write_gml(tree_G, gml_path)
     print(f"Saved tree to: {gml_path}")
 
     # Save edge list for interoperability (handy for igraph / R)
-    edges_csv = paths.processed_dir / f"scovmod_tree_n{tree_cfg.target_component_size}_edges.csv"
+    edges_csv = paths.processed_dir / f"scovmod_tree_edges.parquet"
     edge_rows = []
     for u, v, d in tree_G.edges(data=True):
         edge_rows.append({"infector": u, "infectee": v, "timeStep": d.get("timeStep"), "location": d.get("location")})
-    pd.DataFrame(edge_rows).to_csv(edges_csv, index=False)
+    pd.DataFrame(edge_rows).to_parquet(edges_csv, index=False)
     print(f"Saved edge list to: {edges_csv}")
 
     offspring_counts = np.array(list(dict(clean_G.out_degree(clean_G.nodes)).values()))
     results = heterogeneity(offspring_counts)
-    heterogeneity_path = paths.processed_dir / f"scovmod_tree_n{tree_cfg.target_component_size}_heterogeneity.json"
+    heterogeneity_path = paths.processed_dir / f"scovmod_tree_heterogeneity.json"
     heterogeneity_path.write_text(json.dumps(results, indent=2), encoding="utf-8")
 
     # Save summary stats
@@ -434,7 +434,7 @@ def main() -> None:
     ]
 
     summary_df = pd.DataFrame(summaries)
-    summary_csv = paths.tables_out_dir / f"scovmod_tree_n{tree_cfg.target_component_size}_summary.csv"
+    summary_csv = paths.tables_out_dir / f"scovmod_tree_summary.csv"
     summary_df.to_csv(summary_csv, index=False)
     print(f"Saved summary to: {summary_csv}")
 

@@ -102,7 +102,7 @@ def main() -> None:
     ensure_dirs(processed_dir, figs_dir, tabs_dir)
 
     tree_path = Path(deep_get(scenarios_cfg, ["backbone", "tree_gml"],
-                              "../data/processed/synthetic/scovmod_tree_n5000.gml"))
+                              "../data/processed/synthetic/scovmod_tree.gml"))
     rng_seed = int(deep_get(scenarios_cfg, ["backbone", "rng_seed"], 12345))
     gen_length = int(deep_get(scenarios_cfg, ["backbone", "gen_length"], 29903))
     formats = list(deep_get(scenarios_cfg, ["backbone", "save_formats"], ["png", "pdf"]))

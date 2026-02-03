@@ -110,10 +110,10 @@ def plot_heatmaps_best_f1_and_opt_gamma(df, out_path, title):
         vmax=1,
         annot=True,
         fmt=".2f",
-        cbar_kws={"label": "Best F1 Score"},
+        cbar_kws={"label": "Best F1-score"},
         ax=axes[0]
     )
-    axes[0].set_title("Best F1 Score")
+    axes[0].set_title("Best F1-score")
     axes[0].set_xlabel("")
     axes[0].set_ylabel("Scenario")
 
@@ -133,6 +133,7 @@ def plot_heatmaps_best_f1_and_opt_gamma(df, out_path, title):
     fig.savefig(out_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
     fig.savefig(out_path.with_suffix(".pdf"), bbox_inches="tight")
     plt.close(fig)
+
 def plot_gamma_curves_grid(df, out_path, metric="BCubed_F1_Score", col_wrap=3):
     d = df.loc[:, ["Scenario", "Weight_Column", "gamma", metric]].copy()
     d["Model"] = d["Weight_Column"].map(LABEL_MAP).fillna(d["Weight_Column"])
@@ -157,15 +158,15 @@ def plot_gamma_curves_grid(df, out_path, metric="BCubed_F1_Score", col_wrap=3):
     )
 
     g.set_titles("{col_name}")
-    g.set_axis_labels(r"$\gamma$", metric.replace("_", " "))
+    g.set_axis_labels(r"Resolution ($\gamma$)", "-".join(metric.split("_")[1:]))
     g.set(ylim=(0, 1.05))
 
     g.figure.savefig(out_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
     g.figure.savefig(out_path.with_suffix(".pdf"), bbox_inches="tight")
     plt.close(g.figure)
 
-def plot_gamma_stability_curves_grid(df, out_path, col_wrap=3):
-    d = df.loc[:, ["Scenario", "Weight_Column", "gamma1", "ARI"]].copy()
+def plot_gamma_stability_curves_grid(df, out_path, metric="BCubed_F1_Score", col_wrap=3):
+    d = df.loc[:, ["Scenario", "Weight_Column", "gamma1", metric]].copy()
     d["Model"] = d["Weight_Column"].map(LABEL_MAP).fillna(d["Weight_Column"])
     model_order = [m for m in LABEL_MAP.values() if m in d["Model"].unique()]
     scenario_order = list(pd.unique(d["Scenario"]))
@@ -176,7 +177,7 @@ def plot_gamma_stability_curves_grid(df, out_path, col_wrap=3):
     g = sns.relplot(
         data=d,
         x="gamma1",
-        y="ARI",
+        y=metric,
         hue="Model",
         hue_order=model_order,
         col="Scenario",
@@ -188,7 +189,7 @@ def plot_gamma_stability_curves_grid(df, out_path, col_wrap=3):
     )
 
     g.set_titles("{col_name}")
-    g.set_axis_labels(r"$\gamma$", "ARI")
+    g.set_axis_labels(r"Resolution ($\gamma$)", "-".join(metric.split("_")[1:]))
     g.set(ylim=(0, 1.05))
 
     g.figure.savefig(out_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
@@ -203,48 +204,50 @@ def main() -> None:
     paths_cfg = load_yaml(Path(args.paths))
     figs_dir = Path(deep_get(paths_cfg, ["outputs", "figures", "main"], "../figures/main"))
     sup_figs_dir = Path(deep_get(paths_cfg, ["outputs", "figures", "supplementary"], "../figures/supplementary"))
+    sup_figs_dir = sup_figs_dir / "clustering"
     tabs_dir = Path(deep_get(paths_cfg, ["outputs", "tables", "supplementary"], "../tables/supplementary"))
+    ensure_dirs(figs_dir, sup_figs_dir, tabs_dir)
 
-    # fig1_data = pd.read_csv(tabs_dir / "edge_eval_metrics.csv")
-    # fig2a_data = pd.read_csv(tabs_dir / "clustering_metrics.csv")
+    fig1_data = pd.read_csv(tabs_dir / "edge_eval_metrics.csv")
+    fig2a_data = pd.read_csv(tabs_dir / "clustering_metrics.csv")
     fig2b_data = pd.read_csv(tabs_dir / "clustering_stability.csv")
 
-    # plot_pr_auc_grid(
-    #     df=fig1_data,
-    #     out_path=figs_dir / "fig1_pr_auc_grid",
-    #     title="PR-AUC across scenarios and models"
-    # )
+    plot_pr_auc_grid(
+        df=fig1_data,
+        out_path=figs_dir / "fig1_pr_auc_grid",
+        title="PR-AUC across scenarios and models"
+    )
 
-    # plot_heatmaps_best_f1_and_opt_gamma(
-    #     df=fig2a_data,
-    #     out_path=figs_dir / "fig2_heatmap_best_f1",
-    #     title=""  # r"Best F1 score and $\gamma$ across scenarios and models"
-    # )
+    plot_heatmaps_best_f1_and_opt_gamma(
+        df=fig2a_data,
+        out_path=figs_dir / "fig2_heatmap_best_f1",
+        title=""  # r"Best F1 score and $\gamma$ across scenarios and models"
+    )
 
-    # plot_gamma_curves_grid(
-    #     df=fig2a_data,
-    #     out_path=sup_figs_dir / "clustering/gamma_curves_grid_F1_Score",
-    #     metric="BCubed_F1_Score",
-    #     col_wrap=3
-    # )
-    #
-    # plot_gamma_curves_grid(
-    #     df=fig2a_data,
-    #     out_path=sup_figs_dir / "clustering/gamma_curves_grid_Precision",
-    #     metric="BCubed_Precision",
-    #     col_wrap=3
-    # )
-    #
-    # plot_gamma_curves_grid(
-    #     df=fig2a_data,
-    #     out_path=sup_figs_dir / "clustering/gamma_curves_grid_Recall",
-    #     metric="BCubed_Recall",
-    #     col_wrap=3
-    # )
+    plot_gamma_curves_grid(
+        df=fig2a_data,
+        out_path=sup_figs_dir / "gamma_curves_grid_F1_Score",
+        metric="BCubed_F1_Score",
+        col_wrap=3
+    )
+
+    plot_gamma_curves_grid(
+        df=fig2a_data,
+        out_path=sup_figs_dir / "gamma_curves_grid_Precision",
+        metric="BCubed_Precision",
+        col_wrap=3
+    )
+
+    plot_gamma_curves_grid(
+        df=fig2a_data,
+        out_path=sup_figs_dir / "gamma_curves_grid_Recall",
+        metric="BCubed_Recall",
+        col_wrap=3
+    )
 
     plot_gamma_stability_curves_grid(
         df=fig2b_data,
-        out_path=sup_figs_dir / "clustering/gamma_stability_curves_grid_ARI",
+        out_path=sup_figs_dir / "gamma_stability_curves_grid_F1_Score",
         col_wrap=3
     )
 
