@@ -9,19 +9,11 @@ This is deliberately separate from dataset generation so that:
 - simulation outputs are stable
 - edge evaluation and clustering consume identical inputs
 
-“Although the framework is intended for clustering, pairwise scoring provides a useful check that
-inferred edge weights correspond to recent linkage.”
-
-
 Config
 ------
 config/paths.yaml
-config/baseline.yaml:
-  simulate:
-    out_dir: "data/processed/synthetic"
-  edge_eval:
-    rng_seed: 42
-    plots: {enabled: true, formats: ["png","pdf"]}
+config/simulate_datasets.yaml
+config/default_parameters.yaml
 """
 
 from __future__ import annotations
@@ -44,6 +36,36 @@ from epilink import (
 
 from utils import *
 
+set_seaborn_paper_context(font_scale=1.2)
+
+MODELS = {
+    "LinearDistScore": "Lin–Score",
+    "PoissonDistScore": "Pois–Score",
+    "MechProbLinearDist": "Lin–Mech",
+    "MechProbPoissonDist": "Pois–Mech",
+    "LogitProbLinearDist_0.1": "Lin–Logit(0.1)",
+    "LogitProbLinearDist_1.0": "Lin–Logit(1)",
+    "LogitProbPoissonDist_0.1": "Pois–Logit(0.1)",
+    "LogitProbPoissonDist_1.0": "Pois–Logit(1)",
+}
+
+SCENARIOS = {
+    "baseline": "Baseline",
+    "surveillance_moderate": "Surveillance (moderate)",
+    "surveillance_severe": "Surveillance (severe)",
+
+    # Low evolutionary signal scenarios
+    "low_clock_signal": "Low clock signal",
+    "low_k_inc": "Low incubation shape",
+    "low_scale_inc": "Low incubation scale",
+    # High evolutionary signal scenarios
+    "high_clock_signal": "High clock signal",
+    "high_k_inc": "High incubation shape",
+    "high_scale_inc": "High incubation scale",
+
+    "relaxed_clock": "Relaxed clock",
+    "adversarial": "Adversarial",
+}
 
 def safe_log_loss(y: np.ndarray, p: np.ndarray, eps: float = 1e-15) -> float:
     p = np.clip(p, eps, 1 - eps)
@@ -56,6 +78,43 @@ def evaluate(y: np.ndarray, score: np.ndarray, is_prob: bool) -> Dict[str, float
            "Brier": float(brier_score_loss(y, score)) if is_prob else np.nan}
     return out
 
+
+def plot_weight_distributions(df: pd.DataFrame, out_path: Path, scenario: str) -> None:
+    # Quick diagnostic plot: related vs unrelated score distributions
+
+    # Pair models two-by-two from the flat list
+    model_pairs = [
+        ("LinearDistScore", "PoissonDistScore"),
+        ("MechProbLinearDist", "MechProbPoissonDist"),
+        ("LogitProbLinearDist_0.1", "LogitProbPoissonDist_0.1"),
+        ("LogitProbLinearDist_1.0", "LogitProbPoissonDist_1.0"),
+    ]
+
+    fig, axes = plt.subplots(2, 2, figsize=(8, 8))
+    axes = axes.flatten()
+
+    for idx, (m1, m2) in enumerate(model_pairs):
+        ax = axes[idx]
+        data = []
+        labels = []
+
+        for label, related_val in [("Unrelated", 0), ("Related", 1)]:
+            for m in [m1, m2]:
+                values = df.loc[df["Related"] == related_val, m].dropna().values
+                data.append(values)
+                labels.append(f"{MODELS[m]}\n{label}")
+
+        ax.boxplot(data, patch_artist=True)
+        ax.set_xticklabels(labels, rotation=90)
+        ax.set_ylabel("Edge weight")
+        ax.grid(True, alpha=0.3)
+
+    fig.suptitle(f"{SCENARIOS[scenario]}: effect of deterministic (Lin) vs stochastic (Pois)\ngenetic distances "
+                 "on edge weight distributions")
+
+    fig.tight_layout()
+    save_figure(fig, out_path, ["png"])
+    plt.close(fig)
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -100,12 +159,7 @@ def main() -> None:
             continue
 
         df = pd.read_parquet(pw_path)
-        if "Sampled" in df.columns:
-            df = df[df["Sampled"]].copy()
-        if len(df) < 50 or "Related" not in df.columns:
-            continue
-        if df["Related"].sum() < 2 or df["Related"].sum() == len(df):
-            continue
+        df = df[df["Sampled"]].copy()
 
         # Mechanistic probability
         df["MechProbLinearDist"] = estimate_linkage_probabilities(
@@ -173,44 +227,11 @@ def main() -> None:
             }
             rows.append(row)
 
-        # Quick diagnostic plot: related vs unrelated score distributions
-
-        # Pair models two-by-two from the flat list
-        model_pairs = [
-            ("LinearDistScore", "PoissonDistScore"),
-            ("MechProbLinearDist", "MechProbPoissonDist"),
-            ("LogitProbLinearDist_0.1", "LogitProbPoissonDist_0.1"),
-            ("LogitProbLinearDist_1.0", "LogitProbPoissonDist_1.0"),
-        ]
-
-        fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-        axes = axes.flatten()
-
-        for idx, (m1, m2) in enumerate(model_pairs):
-            ax = axes[idx]
-            data = []
-            labels = []
-
-            for label, related_val in [("Unrelated", 0), ("Related", 1)]:
-                for m in [m1, m2]:
-                    values = df.loc[df["Related"] == related_val, m].dropna().values
-                    data.append(values)
-                    labels.append(f"{m}\n{label}")
-
-            ax.boxplot(data, patch_artist=True)
-            ax.set_xticklabels(labels, rotation=45, ha='right')
-            ax.set_title(f"{m1} vs {m2}")
-            ax.set_ylabel("Score / Probability")
-            ax.grid(True, alpha=0.3)
-
-        fig.tight_layout()
-        save_figure(fig, figs_dir / f"{scen}_boxplots", ["png"])
-        plt.close(fig)
+        plot_weight_distributions(df, figs_dir / f"sm6_{scen}_boxplots", scenario=scen)
 
     out = pd.DataFrame(rows)
     out.to_csv(tabs_dir / "edge_eval_metrics.csv", index=False)
     print(f"Saved edge evaluation metrics to: {tabs_dir / 'edge_eval_metrics.csv'}")
-
 
 if __name__ == "__main__":
     main()

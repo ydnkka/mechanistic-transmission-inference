@@ -33,6 +33,7 @@ from epilink import (
 from utils import *
 
 
+set_seaborn_paper_context()
 
 @dataclass
 class CharCfg:
@@ -61,17 +62,16 @@ class CharCfg:
 # -----------------------------
 
 def plot_density(samples: np.ndarray, xlabel: str, title: str) -> plt.Figure:
-    fig, ax = plt.subplots(figsize=(7, 4))
+    fig, ax = plt.subplots(figsize=(6, 4))
     ax.hist(samples, bins=100, density=True)
     ax.set_xlabel(xlabel)
     ax.set_ylabel("Density")
     ax.set_title(title)
-    ax.grid(True, alpha=0.3)
     return fig
 
 
 def heatmap(z: np.ndarray, x: np.ndarray, y: np.ndarray, xlabel: str, ylabel: str, title: str) -> plt.Figure:
-    fig, ax = plt.subplots(figsize=(7, 5))
+    fig, ax = plt.subplots(figsize=(6, 4))
     im = ax.imshow(
         z,
         origin="lower",
@@ -151,12 +151,8 @@ def main() -> None:
     toit_samples = toit.rvs(cc.n_sim)
     gen_time_samples = toit.generation_time(cc.n_sim)
 
-    fig = plot_density(toit_samples, xlabel="Days", title="Time from onset of infectiousness to transmission (TOIT)")
-    save_figure(fig, figs_dir / "toit_density", formats)
-    plt.close(fig)
-
-    fig = plot_density(gen_time_samples, xlabel="Days", title="Generation time prior (mechanistic)")
-    save_figure(fig, figs_dir / "generation_time_density", formats)
+    fig = plot_density(toit_samples, xlabel="Days", title="")
+    save_figure(fig, figs_dir / "sm1_toit_density", formats)
     plt.close(fig)
 
     # --- B) Plausibility surfaces: genetic-only, temporal-only, joint
@@ -197,27 +193,25 @@ def main() -> None:
 
     # Heatmaps
     fig = heatmap(P_joint, x=snps, y=days, xlabel="Genetic distance (SNPs)", ylabel="Temporal distance (days)",
-                  title="Joint probability of recent transmission (mechanistic)")
-    save_figure(fig, figs_dir / "joint_probability_heatmap", formats)
+                  title="")
+    save_figure(fig, figs_dir / "sm1_joint_probability_heatmap", formats)
     plt.close(fig)
 
     # Line plots for sanity
-    fig, ax = plt.subplots(figsize=(7, 4))
+    fig, ax = plt.subplots(figsize=(6, 4))
     ax.plot(snps, P_genetic)
     ax.set_xlabel("Genetic distance (SNPs)")
     ax.set_ylabel("Probability")
-    ax.set_title("Mechanistic probability vs genetic distance (Δt=0)")
     ax.grid(True, alpha=0.3)
-    save_figure(fig, figs_dir / "prob_vs_snp", formats)
+    save_figure(fig, figs_dir / "sm1_prob_vs_snp", formats)
     plt.close(fig)
 
-    fig, ax = plt.subplots(figsize=(7, 4))
+    fig, ax = plt.subplots(figsize=(6, 4))
     ax.plot(days, P_temporal)
     ax.set_xlabel("Temporal distance (days)")
     ax.set_ylabel("Probability")
-    ax.set_title("Mechanistic probability vs temporal distance (SNP=0)")
     ax.grid(True, alpha=0.3)
-    save_figure(fig, figs_dir / "prob_vs_days", formats)
+    save_figure(fig, figs_dir / "sm1_prob_vs_days", formats)
     plt.close(fig)
 
     # --- C) Sanity table (handy for Methods / Supplement)

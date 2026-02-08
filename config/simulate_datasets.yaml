@@ -11,7 +11,7 @@ backbone:
 scenarios:
 
   baseline:
-    description: "Baseline: High Signal"
+    description: "High Signal"
     ######################################
     # Infectiousness (Hart et al.)
     k_inc: 5.807

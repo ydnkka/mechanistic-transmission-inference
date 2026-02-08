@@ -65,6 +65,8 @@ import igraph as ig
 from utils import *
 
 
+set_seaborn_paper_context()
+
 # -----------------------------
 # Timing helpers
 # -----------------------------
@@ -247,19 +249,18 @@ def timed_igraph_and_leiden(
 def plot_curve(
         df: pd.DataFrame, x: str, y: str, title: str,
         xlabel: str, ylabel: str) -> plt.Figure:
-    fig, ax = plt.subplots(figsize=(6.8, 4.2))
+    fig, ax = plt.subplots(figsize=(6, 4))
     ax.plot(df[x].values, df[y].values, marker="o")
     ax.set_title(title)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    ax.grid(True, alpha=0.3)
     return fig
 
 
 def boxplot_by_threshold(
         df: pd.DataFrame, x: str, y: str,
         title: str, xlabel: str, ylabel: str) -> plt.Figure:
-    fig, ax = plt.subplots(figsize=(8.4, 4.8))
+    fig, ax = plt.subplots(figsize=(6, 4))
     cats = df[x].astype(str)
     order = sorted(cats.unique(), key=lambda z: float(z))
     ax.boxplot(
@@ -270,7 +271,6 @@ def boxplot_by_threshold(
     ax.set_title(title)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    ax.grid(True, axis="y", alpha=0.3)
     return fig
 
 
@@ -412,103 +412,79 @@ def main() -> None:
     # Runtime vs edges (NX diagnostics total time)
     fig = plot_curve(
         retention_df, x="n_edges", y="t_total_nx_s",
-        title="Wall-clock time vs retained edges (diagnostics)",
+        title="", # Total runtime vs retained edges (NX diagnostics)
         xlabel="Number of retained edges", ylabel="Total time (s)",
     )
-    save_figure(fig, figs_dir / "runtime_vs_edges", formats)
+    save_figure(fig, figs_dir / "sm5_runtime_vs_edges", formats)
     plt.close(fig)
 
     # NX build time vs edges
     fig = plot_curve(
         retention_df, x="n_edges", y="t_build_nx_s",
-        title="NetworkX graph build time vs retained edges",
+        title="",
         xlabel="Number of retained edges", ylabel="Build time (s)",
     )
-    save_figure(fig, figs_dir / "build_time_vs_edges", formats)
+    save_figure(fig, figs_dir / "sm5_build_time_vs_edges", formats)
     plt.close(fig)
 
     fig = plot_curve(
         retention_df, x="n_edges", y="t_igraph_build_s",
-        title="igraph build time vs retained edges",
+        title="",
         xlabel="Number of retained edges", ylabel="igraph build time (s)",
     )
-    save_figure(fig, figs_dir / "igraph_build_time_vs_edges", formats)
+    save_figure(fig, figs_dir / "sm5_igraph_build_time_vs_edges", formats)
     plt.close(fig)
 
     fig = plot_curve(
         retention_df, x="n_edges", y="t_leiden_s",
-        title=f"Leiden runtime vs retained edges (γ={args.gamma})",
+        title=f"",  # Leiden runtime vs retained edges (γ={args.gamma})
         xlabel="Number of retained edges", ylabel="Leiden time (s)",
     )
-    save_figure(fig, figs_dir / "leiden_time_vs_edges", formats)
+    save_figure(fig, figs_dir / "sm5_leiden_time_vs_edges", formats)
     plt.close(fig)
 
     fig = plot_curve(
         retention_df, x="min_edge_weight", y="n_clusters",
-        title=f"Number of Leiden clusters vs sparsification threshold (γ={args.gamma})",
+        title="", # Number of Leiden clusters (n>1) vs sparsification threshold
         xlabel="min_edge_weight", ylabel="Number of clusters (n>1)",
     )
-    save_figure(fig, figs_dir / "clusters_vs_minw", formats)
+    save_figure(fig, figs_dir / "sm5_clusters_vs_minw", formats)
     plt.close(fig)
 
     # Peak memory vs edges (Python allocations)
     fig = plot_curve(
         retention_df, x="n_edges", y="peak_tracemalloc_mb",
-        title="Peak Python-allocated memory vs retained edges",
+        title="",  # Peak Python-allocated memory vs retained edges
         xlabel="Number of retained edges", ylabel="Peak tracemalloc (MB)",
     )
-    save_figure(fig, figs_dir / "peak_mem_vs_edges", formats)
+    save_figure(fig, figs_dir / "sm5_peak_mem_vs_edges", formats)
     plt.close(fig)
 
     # Weight retention vs threshold
     fig = plot_curve(
         retention_df, x="min_edge_weight", y="weight_retention_frac",
-        title="Total edge-weight retained under sparsification",
+        title="", # Total edge-weight retained under sparsification
         xlabel="min_edge_weight", ylabel="Weight retention fraction",
     )
-    save_figure(fig, figs_dir / "weight_retention_curve", formats)
+    save_figure(fig, figs_dir / "sm5_weight_retention_curve", formats)
     plt.close(fig)
 
     # Edge retention vs threshold
     fig = plot_curve(
         retention_df, x="min_edge_weight", y="edge_retention_frac",
-        title="Edge count retained under sparsification",
+        title="", # Edge count retained under sparsification
         xlabel="min_edge_weight", ylabel="Edge retention fraction",
     )
-    save_figure(fig, figs_dir / "edge_retention_curve", formats)
+    save_figure(fig, figs_dir / "sm5_edge_retention_curve", formats)
     plt.close(fig)
 
     # Strength distortion: |log ratio| boxplot
     fig = boxplot_by_threshold(
         strength_df, x="min_edge_weight", y="abs_log_ratio",
-        title="Node strength distortion under sparsification (|log ratio|)",
+        title="",  # Node strength distortion under sparsification (|log ratio|)
         xlabel="min_edge_weight", ylabel="|log(strength / strength_ref)|",
     )
-    save_figure(fig, figs_dir / "node_strength_distortion_boxplot", formats)
-    plt.close(fig)
-
-    # Components vs threshold (dual axis)
-    fig, ax = plt.subplots(figsize=(6.8, 4.2))
-    ax.plot(components_df["min_edge_weight"], components_df["n_components"], marker="o", label="components")
-    ax2 = ax.twinx()
-    ax2.plot(
-        components_df["min_edge_weight"],
-        components_df["giant_component_frac"],
-        marker="o",
-        linestyle="--",
-        label="giant component fraction",
-    )
-    ax.set_title("Graph fragmentation under sparsification")
-    ax.set_xlabel("min_edge_weight")
-    ax.set_ylabel("Number of components")
-    ax2.set_ylabel("Giant component fraction")
-    ax.grid(True, alpha=0.3)
-
-    lines, labels = ax.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax.legend(lines + lines2, labels + labels2, fontsize=8, loc="best")
-
-    save_figure(fig, figs_dir / "components_vs_minw", formats)
+    save_figure(fig, figs_dir / "sm5_node_strength_distortion_boxplot", formats)
     plt.close(fig)
 
     print(f"Saved tables to: {tabs_dir}")
