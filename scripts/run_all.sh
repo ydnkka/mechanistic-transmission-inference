@@ -9,7 +9,6 @@ SCRIPTS=(
   "04.1_sparsify_effects.py"
   "04.2_run_clustering.py"
   "05_evaluate_clustering.py"
-  "main_plots.py"
 )
 
 echo "Starting pipeline..."
