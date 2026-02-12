@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import argparse
 from collections import defaultdict
-import pickle
 
 import numpy as np
 import pandas as pd
@@ -112,7 +111,7 @@ def main() -> None:
 
         parts = pd.read_parquet(part_path)
 
-        # --- Clustering accuracy (BCubed) per gamma
+        # --- Clustering evaluation against ground truth
         for (weight_col, gamma), sub in parts.groupby(["weight_col", "gamma"], observed=True):
             pred = dict(zip(sub["case_id"].tolist(), sub["cluster_id"].tolist()))
             pred = {int(k): {int(v)} for k, v in pred.items()}  # make non-overlapping into overlapping

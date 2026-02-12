@@ -27,7 +27,6 @@ config/clustering.yaml:
 from __future__ import annotations
 
 import argparse
-import pickle
 
 import numpy as np
 import pandas as pd
@@ -102,13 +101,12 @@ def main() -> None:
         rows = []
         for weight_col in weight_columns:
             graph = build_igraph_from_pairwise(df[["NodeA", "NodeB", weight_col]].dropna(), weight_col, min_w=min_w)
-            parts = {}
             for gamma in gammas:
                 best = None
                 best_q = -np.inf
 
                 # Restarts help avoid local optima
-                for r in range(n_restarts):
+                for _ in range(n_restarts):
                     part = graph.community_leiden(
                         weights=weight_col,
                         resolution=float(gamma),
@@ -119,7 +117,7 @@ def main() -> None:
                     q = graph.modularity(
                         membership=part,
                         weights=weight_col,
-                        resolution=r,
+                        resolution=gamma,
                         directed=False
                     )
 
@@ -128,7 +126,6 @@ def main() -> None:
                         best = part
 
                 memb = best.membership
-                parts[gamma] = best
                 rows.append(pd.DataFrame({
                     "case_id": graph.vs["case_id"],
                     "gamma": float(gamma),
